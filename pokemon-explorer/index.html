@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pokémon Explorer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f3f3f3;
+      padding: 2rem;
+      text-align: center;
+    }
+
+    h1 {
+      color: #2b2b2b;
+    }
+
+    input {
+      padding: 0.5rem;
+      font-size: 1rem;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      width: 250px;
+      margin-top: 1rem;
+    }
+
+    button {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      margin-left: 0.5rem;
+      border: none;
+      border-radius: 5px;
+      background-color: #007BFF;
+      color: white;
+      cursor: pointer;
+    }
+
+    #search-result {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 2rem;
+      gap: 2rem;
+    }
+
+    .pokemon-card, .preview-card {
+      background-color: white;
+      padding: 1rem;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      transition: transform 0.2s ease;
+    }
+
+    .pokemon-card {
+      max-width: 450px;
+      flex: 1;
+    }
+
+    .preview-card {
+      max-width: 200px;
+      flex: 0 0 auto;
+      align-self: flex-start;
+    }
+
+    .pokemon-card img, .preview-card img {
+      width: 150px;
+      height: 150px;
+    }
+
+    .preview-card img {
+      width: 100px;
+      height: 100px;
+    }
+
+    .type-badge {
+      display: inline-block;
+      background: #ddd;
+      border-radius: 4px;
+      padding: 4px 8px;
+      margin: 2px;
+      font-size: 1rem;
+      font-weight: bold;
+      text-transform: capitalize;
+    }
+
+    .pokemon-info {
+      font-size: 1rem;
+      color: #333;
+      line-height: 1.6;
+      text-align: left;
+    }
+
+    .image-grid {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .image-grid img {
+      width: 64px;
+      height: 64px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pokémon Explorer</h1>
+  <input type="text" id="search-input" placeholder="Enter Pokémon name or ID" autofocus />
+  <button onclick="searchPokemon()">Search</button>
+  <div id="search-result"></div>
+
+  <script>
+    document.getElementById('search-input').addEventListener('keydown', function(event) {
+      if (event.key === 'Enter') {
+        searchPokemon();
+      }
+    });
+
+    async function searchPokemon() {
+      let input = document.getElementById('search-input').value.trim().replace(/^#/, '');
+      if (!input) return;
+      const name = isNaN(input) ? input.toLowerCase() : input;
+
+      try {
+        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`);
+        if (!res.ok) {
+          document.getElementById('search-result').innerHTML = '<p style="color:red;">Pokémon not found</p>';
+          return;
+        }
+        const data = await res.json();
+        displayPokemonDetails(data);
+      } catch (error) {
+        console.error(error);
+        document.getElementById('search-result').innerHTML = '<p style="color:red;">An error occurred</p>';
+      }
+    }
+
+    function displayPokemonDetails(data) {
+      const container = document.getElementById('search-result');
+      const sprites = data.sprites;
+      const images = [
+        sprites.front_default,
+        sprites.back_default,
+        sprites.front_shiny,
+        sprites.back_shiny
+      ].filter(Boolean);
+
+      const baseStats = data.stats.map(stat => 
+        `<li><strong>${capitalize(stat.stat.name)}:</strong> ${stat.base_stat}</li>`).join('');
+
+      const versionNames = [...new Set(data.game_indices.map(g => g.version.name))]
+        .slice(0, 5)
+        .map(v => capitalize(v)).join(', ');
+
+      container.innerHTML = `
+        <div class="preview-card">
+          <img src="${sprites.front_default}" alt="${data.name}" />
+          <h3>${capitalize(data.name)}</h3>
+          <p>ID: ${data.id}</p>
+        </div>
+        <div class="pokemon-card">
+          <img src="${sprites.front_default}" alt="${data.name}" />
+          <h2>${capitalize(data.name)} (#${data.id})</h2>
+          <div>${data.types.map(t => `<span class='type-badge'>${t.type.name}</span>`).join('')}</div>
+          <div class="pokemon-info">
+            <p><strong>Height:</strong> ${data.height / 10} m</p>
+            <p><strong>Weight:</strong> ${data.weight / 10} kg</p>
+            <p><strong>Abilities:</strong> ${data.abilities.map(a => capitalize(a.ability.name)).join(', ')}</p>
+            <p><strong>Base Experience:</strong> ${data.base_experience}</p>
+            <p><strong>Species:</strong> ${capitalize(data.species.name)}</p>
+            <p><strong>Game Versions:</strong> ${versionNames}</p>
+            <p><strong>Moves:</strong> ${data.moves.length} total</p>
+            <p><strong>Order:</strong> ${data.order}</p>
+            <ul><strong>Base Stats:</strong> ${baseStats}</ul>
+          </div>
+          <div class="image-grid">
+            ${images.map(url => `<img src="${url}" alt="Sprite" />`).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function capitalize(word) {
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+
+---
+
+## 📄 `.gitignore`
+
+For this project, a minimal `.gitignore` suffices:
+
+```bash
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Node or Python (in case of expansion later)
+node_modules/
+.env
+*.log
+```
+
+---
+
+## 📜 License
+
+MIT License
